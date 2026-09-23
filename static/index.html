@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dragon Dice Wheel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --gold: #fbbf24;
+      --green: #22c55e;
+      --red: #ef4444;
+      --cyan: #06b6d4;
+      --text: #f8fafc;
+      --subtext: #94a3b8;
+      --border-dark: #090d16;
+    }
+
+    * { 
+      box-sizing: border-box; 
+      margin: 0; 
+      padding: 0; 
+      font-family: 'Press Start 2P', monospace; 
+      image-rendering: pixelated;
+    }
+
+    html, body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    body { 
+      background-color: var(--bg); 
+      color: var(--text); 
+      padding: 0.5rem;
+      display: flex; 
+      justify-content: center; 
+      align-items: center;
+    }
+
+    .container { 
+      max-width: 950px; 
+      width: 100%; 
+      height: 100%;
+      max-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    header { text-align: center; margin-bottom: 0.5rem; flex-shrink: 0; }
+    h1 { font-size: 1.1rem; color: var(--gold); letter-spacing: 1px; text-shadow: 2px 2px #000; }
+    .subtitle { color: var(--subtext); font-size: 0.55rem; margin-top: 0.2rem; }
+
+    /* Pixelated Box Borders */
+    .pixel-box {
+      background: var(--card-bg);
+      border: 4px solid var(--border-dark);
+      box-shadow: 
+        inset -4px -4px 0px 0px #0f172a,
+        inset 4px 4px 0px 0px #334155,
+        0px 4px 0px 0px #000;
+      padding: 0.65rem;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 0.5rem; }
+
+    /* Pixelated Cards */
+    .trope-card { 
+      background: #334155; 
+      padding: 0.5rem; 
+      border: 3px solid #0f172a;
+      box-shadow: inset -2px -2px 0px 0px #1e293b, inset 2px 2px 0px 0px #475569;
+      cursor: pointer; 
+      transition: none; 
+    }
+    .trope-card:hover { border-color: var(--cyan); }
+    .trope-card.selected { border-color: var(--gold); background: #1e293b; box-shadow: inset 0 0 0 2px var(--gold); }
+    .trope-card.cpu-selected { border-color: var(--red); background: #1e293b; box-shadow: inset 0 0 0 2px var(--red); }
+    .trope-card.disabled { opacity: 0.3; pointer-events: none; }
+    .trope-card h3 { color: var(--gold); font-size: 0.65rem; margin-bottom: 0.3rem; }
+    .trope-card p { color: var(--subtext); font-size: 0.48rem; line-height: 1.4; }
+
+    .mode-selector { display: flex; gap: 1rem; margin: 0.5rem 0; font-size: 0.55rem; }
+    .mode-selector label { cursor: pointer; display: flex; align-items: center; gap: 0.4rem; }
+
+    /* Pixel Buttons */
+    .btn { 
+      display: inline-block; 
+      width: 100%; 
+      background: var(--gold); 
+      color: #000; 
+      font-weight: bold; 
+      padding: 0.6rem; 
+      border: 3px solid #000;
+      box-shadow: inset -3px -3px 0px 0px #b45309, inset 3px 3px 0px 0px #fde047;
+      cursor: pointer; 
+      font-size: 0.65rem; 
+      text-transform: uppercase;
+      text-align: center;
+    }
+    .btn:active {
+      box-shadow: inset 3px 3px 0px 0px #b45309;
+      transform: translate(2px, 2px);
+    }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
+
+    .scoreboard { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      border-bottom: 4px solid #0f172a; 
+      padding-bottom: 0.4rem; 
+      margin-bottom: 0.4rem; 
+    }
+    .score-box { text-align: center; }
+    .score-val { font-size: 1.2rem; font-weight: bold; line-height: 1.2; margin-top: 0.2rem; }
+    .score-box h3 { font-size: 0.6rem; }
+    .score-box small { font-size: 0.45rem; color: var(--subtext); }
+
+    .win-conditions-card {
+      background: #090d16;
+      border: 3px solid #000;
+      padding: 0.4rem 0.6rem;
+      margin-bottom: 0.4rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    .win-conditions-card h4 {
+      color: var(--gold);
+      font-size: 0.55rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .win-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 0.48rem; }
+    .win-col-player { border-left: 3px solid var(--green); padding-left: 0.35rem; }
+    .win-col-cpu { border-left: 3px solid var(--red); padding-left: 0.35rem; }
+    .win-col-title { font-weight: bold; font-size: 0.5rem; margin-bottom: 0.2rem; }
+    .win-col-player .win-col-title { color: var(--green); }
+    .win-col-cpu .win-col-title { color: var(--red); }
+    .win-details { color: var(--subtext); line-height: 1.4; }
+
+    .arena-grid { display: grid; grid-template-columns: 1fr 1.1fr; gap: 0.6rem; align-items: start; }
+    .left-col, .right-col { display: flex; flex-direction: column; gap: 0.35rem; }
+
+    #ability-controls { min-height: 2rem; display: flex; align-items: center; }
+
+    .toggle-group { 
+      width: 100%; 
+      display: flex; 
+      align-items: center; 
+      background: #334155; 
+      border: 2px solid #000;
+      padding: 0.3rem 0.45rem; 
+      font-size: 0.5rem; 
+      line-height: 1.3;
+    }
+
+    .outcome-banner {
+      text-align: center;
+      font-size: 0.55rem;
+      font-weight: bold;
+      padding: 0.4rem;
+      border: 3px solid transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 2.2rem;
+      line-height: 1.3;
+    }
+    .outcome-banner.win { background: #14532d; color: var(--green); border-color: var(--green); }
+    .outcome-banner.lose { background: #7f1d1d; color: var(--red); border-color: var(--red); }
+    .outcome-banner.tie { background: #334155; color: var(--subtext); border-color: var(--subtext); }
+
+    .arena-display {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 0.5rem;
+      background: #090d16;
+      border: 3px solid #000;
+    }
+    .player-roll-box { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; }
+    .player-roll-box small { font-size: 0.45rem; color: var(--subtext); }
+
+    /* Pixel Dice */
+    .dice {
+      width: 48px;
+      height: 48px;
+      background: #1e293b;
+      border: 4px solid var(--gold);
+      box-shadow: inset -3px -3px 0px 0px #0f172a, inset 3px 3px 0px 0px #475569;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 1rem;
+      font-weight: bold;
+      color: #fff;
+    }
+    .dice.win { border-color: var(--green); color: var(--green); }
+    .dice.lose { border-color: var(--red); color: var(--red); }
+
+    /* Retro Pixel Spin Animations */
+    .dice.spin-cw {
+      animation: pixelSpin 0.2s steps(4) infinite;
+    }
+
+    .dice.spin-ccw {
+      animation: pixelSpinRev 0.2s steps(4) infinite;
+    }
+
+    @keyframes pixelSpin {
+      0% { transform: rotate(0deg); }
+      50% { transform: rotate(180deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @keyframes pixelSpinRev {
+      0% { transform: rotate(0deg); }
+      50% { transform: rotate(-180deg); }
+      100% { transform: rotate(-360deg); }
+    }
+
+    .explainer-box {
+      background: #0f172a;
+      border: 3px solid #000;
+      border-left: 4px solid var(--cyan);
+      padding: 0.4rem 0.5rem;
+    }
+    .explainer-box h4 { color: var(--cyan); font-size: 0.5rem; text-transform: uppercase; margin-bottom: 0.2rem; }
+    .explainer-box p { color: var(--text); font-size: 0.48rem; line-height: 1.4; }
+
+    .badges-container { display: flex; flex-wrap: wrap; gap: 0.3rem; justify-content: center; }
+    .badge {
+      background: #334155;
+      color: var(--text);
+      padding: 0.2rem 0.4rem;
+      font-size: 0.45rem;
+      border: 2px solid var(--cyan);
+    }
+
+    input[type="checkbox"], input[type="radio"] {
+      accent-color: var(--gold);
+      width: 12px;
+      height: 12px;
+    }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🐉 DRAGON DICE WHEEL 🎲</h1>
+      <p class="subtitle">A GAME OF LONG-RUN THINKING</p>
+    </header>
+
+    <!-- SETUP STAGE -->
+    <div id="setup-stage" class="pixel-box">
+      <h2 style="font-size:0.65rem; color: var(--gold);">1. SELECT YOUR TROPE</h2>
+      <div id="player-tropes" class="grid" style="margin-top: 0.4rem;"></div>
+
+      <h2 style="font-size:0.65rem; color: var(--gold); margin-top: 0.6rem;">2. OPPONENT SELECTION MODE</h2>
+      <div class="mode-selector">
+        <label><input type="radio" name="cpu_mode" value="random" checked onchange="toggleCpuMode(this.value)"> <span>RANDOM</span></label>
+        <label><input type="radio" name="cpu_mode" value="manual" onchange="toggleCpuMode(this.value)"> <span>MANUAL PICK</span></label>
+      </div>
+
+      <div id="cpu-selection-panel" class="hidden" style="margin-top: 0.4rem;">
+        <h3 style="color: var(--red); font-size: 0.55rem; margin-bottom: 0.3rem;">PICK CPU TROPE</h3>
+        <div id="cpu-tropes" class="grid"></div>
+      </div>
+
+      <button id="start-btn" class="btn" style="margin-top: 0.6rem;">START SERIES</button>
+    </div>
+
+    <!-- ARENA STAGE -->
+    <div id="arena-stage" class="pixel-box hidden">
+      <div class="scoreboard">
+        <div class="score-box">
+          <h3 id="player-name" style="color:var(--green)">PLAYER</h3>
+          <div class="score-val" id="player-score">0</div>
+          <small id="player-tokens">TOKENS: 0</small>
+        </div>
+        <div><h2 id="round-label" style="color:var(--cyan); font-size:0.65rem;">ROUND 1 / 5</h2></div>
+        <div class="score-box">
+          <h3 id="cpu-name" style="color:var(--red)">CPU</h3>
+          <div class="score-val" id="cpu-score">0</div>
+          <small id="cpu-tokens">TOKENS: 0</small>
+        </div>
+      </div>
+
+      <!-- MATCHUP RULES -->
+      <div class="win-conditions-card">
+        <h4>🎯 MATCHUP & WIN RULES</h4>
+        <div class="win-grid">
+          <div class="win-col-player">
+            <div class="win-col-title" id="p-win-title">YOUR PATH TO WIN</div>
+            <div class="win-details" id="p-win-details">-</div>
+          </div>
+          <div class="win-col-cpu">
+            <div class="win-col-title" id="c-win-title">CPU PATH TO WIN</div>
+            <div class="win-details" id="c-win-details">-</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="arena-grid">
+        <div class="left-col">
+          <button id="roll-btn" class="btn">ROLL DICE!</button>
+          <button id="restart-btn" class="btn hidden" style="background: var(--cyan); color: #fff;">PLAY AGAIN</button>
+          <div id="ability-controls"></div>
+          <div id="outcome-banner" class="outcome-banner">&nbsp;</div>
+        </div>
+
+        <div class="right-col">
+          <div class="arena-display">
+            <div class="player-roll-box">
+              <small>YOUR ROLL</small>
+              <div id="player-dice" class="dice">-</div>
+            </div>
+            <div style="font-size:0.65rem; font-weight:bold; color:var(--subtext)">VS</div>
+            <div class="player-roll-box">
+              <small>CPU ROLL</small>
+              <div id="cpu-dice" class="dice">-</div>
+            </div>
+          </div>
+
+          <div class="explainer-box">
+            <h4>ROUND CALCULATION</h4>
+            <p id="explainer-text">Choose abilities (if any), then hit 'ROLL DICE!'.</p>
+          </div>
+
+          <div id="badges-container" class="badges-container"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let gameId = null;
+    let selectedPlayerTrope = null;
+    let selectedCpuTrope = null;
+    let cpuSelectionMode = 'random';
+    let tropesData = {};
+    let diceValues = {};
+
+    async function init() {
+      const res = await fetch('/api/tropes');
+      const data = await res.json();
+      tropesData = data.details;
+      diceValues = data.dice_values;
+      renderPlayerGrid();
+    }
+
+    function renderPlayerGrid() {
+      const container = document.getElementById('player-tropes');
+      container.innerHTML = Object.entries(tropesData).map(([name, info]) => `
+        <div class="trope-card ${selectedPlayerTrope === name ? 'selected' : ''}" onclick="selectPlayerTrope('${name}')">
+          <h3>${name} (${info.die})</h3>
+          <p>${info.ability}</p>
+        </div>
+      `).join('');
+    }
+
+    function renderCpuGrid() {
+      const container = document.getElementById('cpu-tropes');
+      container.innerHTML = Object.entries(tropesData).map(([name, info]) => {
+        const isDisabled = name === selectedPlayerTrope;
+        const isSelected = name === selectedCpuTrope;
+        return `
+          <div class="trope-card ${isDisabled ? 'disabled' : ''} ${isSelected ? 'cpu-selected' : ''}" 
+               onclick="${isDisabled ? '' : `selectCpuTrope('${name}')`}">
+            <h3>${name} (${info.die})</h3>
+            <p>${info.ability}</p>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function selectPlayerTrope(name) {
+      selectedPlayerTrope = name;
+      if (selectedCpuTrope === name) selectedCpuTrope = null;
+      renderPlayerGrid();
+      if (cpuSelectionMode === 'manual') renderCpuGrid();
+    }
+
+    function selectCpuTrope(name) {
+      selectedCpuTrope = name;
+      renderCpuGrid();
+    }
+
+    function toggleCpuMode(mode) {
+      cpuSelectionMode = mode;
+      const panel = document.getElementById('cpu-selection-panel');
+      if (mode === 'manual') {
+        panel.classList.remove('hidden');
+        renderCpuGrid();
+      } else {
+        panel.classList.add('hidden');
+        selectedCpuTrope = null;
+      }
+    }
+
+    function getWinConditionSummary(tropeName, opponentName) {
+      const trope = tropesData[tropeName];
+      const pFaces = [...new Set(diceValues[tropeName])].sort((a,b)=>a-b);
+
+      let summary = `<strong>DIE:</strong> ${trope.die} (${pFaces.join(', ')})<br>`;
+
+      if (tropeName === 'Loreley') {
+        summary += `• 10 wins immediately if All-In; 0 loses.`;
+      } else if (tropeName === 'Klabautermann') {
+        summary += `• Reroll if lower than opponent.`;
+      } else if (tropeName === 'Heinzelmaennchen') {
+        summary += `• Loss = +1 token. Spend 2 tokens for +1 modifier.`;
+      } else if (tropeName === 'Wolpertinger') {
+        summary += `• D6 Chaos die adds +1 on 4-5 or rerolls on 6.`;
+      } else if (tropeName === 'Tatzelwurm') {
+        summary += `• Wins ties automatically on roll 8.`;
+      } else if (tropeName === 'Brockenhexe') {
+        summary += `• Hex opponent to reroll when losing.`;
+      } else if (tropeName === 'Doener-Golem') {
+        summary += `• Roll 8 strips CPU token; Roll 3 adds token.`;
+      } else if (tropeName === 'Spaeti-Kobold') {
+        summary += `• Loss = token. Spend 2 tokens to force CPU reroll.`;
+      }
+
+      return summary;
+    }
+
+    document.getElementById('start-btn').onclick = async () => {
+      if (!selectedPlayerTrope) return alert('PLEASE SELECT YOUR TROPE!');
+      if (cpuSelectionMode === 'manual' && !selectedCpuTrope) return alert('PLEASE SELECT AN OPPONENT!');
+
+      const res = await fetch('/api/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          player_trope: selectedPlayerTrope,
+          cpu_trope: cpuSelectionMode === 'manual' ? selectedCpuTrope : null
+        })
+      });
+
+      const data = await res.json();
+      gameId = data.game_id;
+      
+      document.getElementById('p-win-title').innerText = `YOU: ${data.state.player_trope}`;
+      document.getElementById('p-win-details').innerHTML = getWinConditionSummary(data.state.player_trope, data.state.cpu_trope);
+
+      document.getElementById('c-win-title').innerText = `CPU: ${data.state.cpu_trope}`;
+      document.getElementById('c-win-details').innerHTML = getWinConditionSummary(data.state.cpu_trope, data.state.player_trope);
+
+      renderGameState(data.state);
+
+      document.getElementById('setup-stage').classList.add('hidden');
+      document.getElementById('arena-stage').classList.remove('hidden');
+    };
+
+    function renderGameState(state) {
+      document.getElementById('player-name').innerText = `YOU (${state.player_trope})`;
+      document.getElementById('cpu-name').innerText = `CPU (${state.cpu_trope})`;
+      document.getElementById('player-score').innerText = state.player_wins;
+      document.getElementById('cpu-score').innerText = state.cpu_wins;
+      document.getElementById('player-tokens').innerText = `TOKENS: ${state.player_tokens}`;
+      document.getElementById('cpu-tokens').innerText = `TOKENS: ${state.cpu_tokens}`;
+      document.getElementById('round-label').innerText = `ROUND ${Math.min(state.round + 1, 5)} / 5`;
+
+      const abContainer = document.getElementById('ability-controls');
+      abContainer.innerHTML = '';
+
+      if (state.player_trope === 'Loreley') {
+        abContainer.innerHTML = `<div class="toggle-group"><label><input type="checkbox" id="ab-loreley"> DECLARE ALL-IN (10=WIN, 0=LOSE)</label></div>`;
+      } else if (state.player_trope === 'Heinzelmaennchen') {
+        const canAfford = state.player_tokens >= 2;
+        abContainer.innerHTML = `<div class="toggle-group"><label><input type="checkbox" id="ab-heinzel" ${canAfford ? '' : 'disabled'}> SPEND 2 TOKENS FOR +1 (${state.player_tokens}/2)</label></div>`;
+      } else if (state.player_trope === 'Klabautermann') {
+        abContainer.innerHTML = `<div class="toggle-group"><label><input type="checkbox" id="ab-klabauter"> REROLL ON TIE OR LOSS</label></div>`;
+      } else if (state.player_trope === 'Brockenhexe') {
+        abContainer.innerHTML = `<div class="toggle-group"><label><input type="checkbox" id="ab-brocken"> FORCE CPU REROLL</label></div>`;
+      } else if (state.player_trope === 'Spaeti-Kobold') {
+        const canAfford = state.player_tokens >= 2;
+        abContainer.innerHTML = `<div class="toggle-group"><label><input type="checkbox" id="ab-spaeti" ${canAfford ? '' : 'disabled'}> SPEND 2 TOKENS FOR CPU REROLL (${state.player_tokens}/2)</label></div>`;
+      }
+    }
+
+    document.getElementById('roll-btn').onclick = async () => {
+      const rollBtn = document.getElementById('roll-btn');
+      const pDice = document.getElementById('player-dice');
+      const cDice = document.getElementById('cpu-dice');
+      const banner = document.getElementById('outcome-banner');
+      const explainer = document.getElementById('explainer-text');
+
+      rollBtn.disabled = true;
+      pDice.className = 'dice spin-cw';
+      cDice.className = 'dice spin-ccw';
+      banner.className = 'outcome-banner';
+      banner.innerHTML = 'ROLLING...';
+
+      const symbols = ['1', '2', '3', '5', '8', '0'];
+      const symbolInterval = setInterval(() => {
+        pDice.innerText = symbols[Math.floor(Math.random() * symbols.length)];
+        cDice.innerText = symbols[Math.floor(Math.random() * symbols.length)];
+      }, 70);
+
+      const payload = {
+        game_id: gameId,
+        player_all_in: document.getElementById('ab-loreley')?.checked || false,
+        spend_heinzel: document.getElementById('ab-heinzel')?.checked || false,
+        use_klabauter: document.getElementById('ab-klabauter')?.checked || false,
+        use_brocken: document.getElementById('ab-brocken')?.checked || false,
+        use_spaeti: document.getElementById('ab-spaeti')?.checked || false
+      };
+
+      const res = await fetch('/api/play', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+
+      setTimeout(() => {
+        clearInterval(symbolInterval);
+
+        pDice.innerText = data.rolls.player;
+        cDice.innerText = data.rolls.cpu;
+
+        pDice.className = 'dice';
+        cDice.className = 'dice';
+
+        if (data.winner === 'player') {
+          pDice.classList.add('win');
+          cDice.classList.add('lose');
+          banner.classList.add('win');
+          banner.innerText = "YOU WON THIS ROUND!";
+        } else if (data.winner === 'cpu') {
+          cDice.classList.add('win');
+          pDice.classList.add('lose');
+          banner.classList.add('lose');
+          banner.innerText = "CPU WON THIS ROUND!";
+        } else {
+          banner.classList.add('tie');
+          banner.innerText = "IT'S A TIE!";
+        }
+
+        explainer.innerHTML = `
+          <strong>OUTCOME:</strong> YOU (${data.rolls.player}) VS CPU (${data.rolls.cpu}).<br>
+          <strong>REASON:</strong> ${data.win_reason}.
+        `;
+
+        const badgeContainer = document.getElementById('badges-container');
+        badgeContainer.innerHTML = '';
+        data.events.forEach(e => {
+          const b = document.createElement('div');
+          b.className = 'badge';
+          b.innerText = e;
+          badgeContainer.appendChild(b);
+        });
+
+        renderGameState(data.state);
+        rollBtn.disabled = false;
+
+        if (data.state.is_over) {
+          rollBtn.classList.add('hidden');
+          document.getElementById('restart-btn').classList.remove('hidden');
+
+          banner.className = 'outcome-banner';
+          if (data.state.player_wins > data.state.cpu_wins) {
+            banner.classList.add('win');
+            banner.innerText = "VICTORY! YOU WON THE SERIES!";
+          } else if (data.state.cpu_wins > data.state.player_wins) {
+            banner.classList.add('lose');
+            banner.innerText = "GAME OVER! CPU WON!";
+          } else {
+            banner.classList.add('tie');
+            banner.innerText = "DRAW! SERIES TIED!";
+          }
+        }
+      }, 500);
+    };
+
+    document.getElementById('restart-btn').onclick = () => location.reload();
+
+    init();
+  </script>
+</body>
+</html>
