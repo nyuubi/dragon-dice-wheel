@@ -1,0 +1,44 @@
+========================================================================
+                          DRAGON DICE WHEEL
+========================================================================
+
+ABOUT THE GAME
+------------------------------------------------------------------------
+Dragon Dice Wheel is a strategy web game of non-transitive probabilities 
+and German folklore. Face a CPU over 5 rounds using custom-weighted dice 
+and mythic tropes like Loreley or Späti-Kobold. Spend tokens, trigger 
+special abilities, and master the statistical odds to win the series. 
+Includes 2D spin animations and live breakdown logs.
+
+
+PREREQUISITES
+------------------------------------------------------------------------
+- Python 3.8+ installed on your system.
+- A modern web browser (Chrome, Edge, Firefox, Safari).
+
+
+HOW TO RUN THE GAME LOCALLY
+------------------------------------------------------------------------
+1. Open your terminal or command prompt in this directory.
+
+2. Install the required web packages:
+   pip install -r requirements.txt
+
+3. Start the FastAPI server:
+   uvicorn app:app --reload
+   
+   (Or run via python directly if configured: python app.py)
+
+4. Open your web browser and navigate to:
+   http://127.0.0.1:8000   (or http://localhost:8000)
+
+
+HOW TO PLAY
+------------------------------------------------------------------------
+1. Select Your Trope: Choose a mythic figure with its own unique die 
+   distribution and special ability.
+2. Opponent Selection: Choose Random or Manual Pick for the CPU.
+3. Roll & Strategy: Check ability boxes (if available) to spend tokens 
+   or declare All-In, then click "Roll Dice!".
+4. Win the Series: Score the most round points out of 5 rounds to win.
+========================================================================
